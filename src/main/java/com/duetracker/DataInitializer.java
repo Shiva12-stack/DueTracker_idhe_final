@@ -48,8 +48,8 @@ public class DataInitializer {
                     new BigDecimal("2200.00"), "Monthly groceries", null));
 
             System.out.println("========================================");
-            System.out.println(" DueTracker started on port 8889");
-            System.out.println(" Open: http://localhost:8889");
+            System.out.println(" DueTracker started on port 8080");
+            System.out.println(" Open: http://localhost:8080");
             System.out.println(" Demo login: ramesh@guptastore.com / seller123");
             System.out.println("========================================");
         };

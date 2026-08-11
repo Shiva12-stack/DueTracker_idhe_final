@@ -1,18 +1,22 @@
 /*
   DueTracker API Client Layer
-  Robust REST API Client with Universal Smart Authentication Fallback
+  Backend-first API client
+  All create/update/delete/payment operations are stored through Spring Boot
+  and therefore in the Aiven MySQL database.
 */
 
 const API_BASE = '/api';
 
-// Fallback in-memory / localStorage DB state
+// Keep local data only for existing frontend fallback/read compatibility.
+// Database-changing operations NEVER save to this local DB.
 const mockDB = {
   sellers: JSON.parse(localStorage.getItem('dt_sellers') || '[]'),
   customers: JSON.parse(localStorage.getItem('dt_customers') || '[]'),
   transactions: JSON.parse(localStorage.getItem('dt_transactions') || '[]')
 };
 
-// Seed default shop owner if empty
+// Existing demo data for frontend compatibility only.
+// This does NOT write anything to Aiven.
 if (mockDB.sellers.length === 0) {
   mockDB.sellers.push({
     id: 1,
@@ -22,10 +26,13 @@ if (mockDB.sellers.length === 0) {
     password: 'seller123',
     storeName: 'Gupta General Store'
   });
-  localStorage.setItem('dt_sellers', JSON.stringify(mockDB.sellers));
+
+  localStorage.setItem(
+      'dt_sellers',
+      JSON.stringify(mockDB.sellers)
+  );
 }
 
-// Seed default customer if empty
 if (mockDB.customers.length === 0) {
   mockDB.customers.push({
     id: 1,
@@ -35,318 +42,453 @@ if (mockDB.customers.length === 0) {
     email: 'rahul@gmail.com',
     address: 'Flat 302, Green Avenue, Delhi'
   });
-  localStorage.setItem('dt_customers', JSON.stringify(mockDB.customers));
 
-  mockDB.transactions.push(
-    { id: 101, customerId: 1, type: 'PURCHASE', amount: 2500, description: 'Monthly grocery purchase', transactionDate: new Date().toISOString() },
-    { id: 102, customerId: 1, type: 'PAYMENT', amount: 1000, description: 'UPI partial payment', transactionDate: new Date().toISOString() }
+  localStorage.setItem(
+      'dt_customers',
+      JSON.stringify(mockDB.customers)
   );
-  localStorage.setItem('dt_transactions', JSON.stringify(mockDB.transactions));
 }
 
-function saveLocalDB() {
-  localStorage.setItem('dt_sellers', JSON.stringify(mockDB.sellers));
-  localStorage.setItem('dt_customers', JSON.stringify(mockDB.customers));
-  localStorage.setItem('dt_transactions', JSON.stringify(mockDB.transactions));
-}
+
+// =====================================================
+// API
+// =====================================================
 
 window.DueTrackerAPI = {
 
-  // 1. Seller / Merchant Registration
+  // ===================================================
+  // 1. SELLER REGISTRATION
+  // ===================================================
+
   async registerSeller(data) {
+
+    const res = await fetch(
+        `${API_BASE}/auth/seller/register`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        }
+    );
+
+    const text = await res.text();
+
+    let result;
+
     try {
-      const res = await fetch(`${API_BASE}/auth/seller/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('REST API unavailable, saving locally:', e);
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = { message: text };
     }
 
-    const existing = mockDB.sellers.find(s => s.email.toLowerCase() === data.email.toLowerCase());
-    if (existing) {
-      throw new Error('An account with this email address already exists!');
+    if (!res.ok) {
+      throw new Error(
+          result.message ||
+          result.error ||
+          'Seller registration failed'
+      );
     }
-    const newSeller = {
-      id: Date.now(),
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      password: data.password,
-      storeName: data.storeName
-    };
-    mockDB.sellers.push(newSeller);
-    saveLocalDB();
-    return { success: true, seller: newSeller };
+
+    // IMPORTANT:
+    // Do NOT save seller to mockDB/localStorage.
+    // Backend has already saved it to Aiven.
+    return result;
   },
 
-  // 2. Merchant Login (Super Flexible Authentication)
+
+  // ===================================================
+  // 2. SELLER LOGIN
+  // ===================================================
+
   async loginSeller(identifier, password) {
-    try {
-      const res = await fetch(`${API_BASE}/auth/seller/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password })
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('REST API unavailable, authenticating locally:', e);
-    }
 
-    const cleanId = (identifier || '').trim().toLowerCase();
-    const cleanPass = (password || '').trim();
-
-    // Match exact or flexible keyword ('seller', 'admin', email, phone, name)
-    let seller = mockDB.sellers.find(s =>
-      s.email.toLowerCase() === cleanId ||
-      s.phone === cleanId ||
-      s.name.toLowerCase() === cleanId ||
-      (s.password === cleanPass && (cleanId === 'seller' || cleanId === 'admin' || cleanId.includes('seller') || cleanId.includes('gupta')))
+    const res = await fetch(
+        `${API_BASE}/auth/seller/login`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            identifier,
+            password
+          })
+        }
     );
 
-    // If typing shorthand 'seller', default to first registered shop
-    if (!seller && (cleanId === 'seller' || cleanId === 'admin' || cleanId === '' || mockDB.sellers.length > 0)) {
-      seller = mockDB.sellers[0];
+    const text = await res.text();
+
+    let result;
+
+    try {
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = { message: text };
     }
 
-    if (!seller) {
-      throw new Error('Invalid login credentials! Please check your email/phone or password.');
+    if (!res.ok) {
+      throw new Error(
+          result.message ||
+          result.error ||
+          'Invalid seller login credentials'
+      );
     }
 
-    return { success: true, role: 'SELLER', seller };
+    return result;
   },
 
-  // 3. Customer Login (Super Flexible Authentication)
+
+  // ===================================================
+  // 3. CUSTOMER LOGIN
+  // ===================================================
+
   async loginCustomer(name, phone) {
-    try {
-      const res = await fetch(`${API_BASE}/auth/customer/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: name, phone })
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('REST API unavailable, authenticating locally:', e);
-    }
 
-    const cleanName = (name || '').trim().toLowerCase();
-    const cleanPhone = (phone || '').trim();
-
-    let customer = mockDB.customers.find(c =>
-      c.phone === cleanPhone ||
-      c.name.toLowerCase() === cleanName ||
-      c.name.toLowerCase().includes(cleanName)
+    const res = await fetch(
+        `${API_BASE}/auth/customer/login`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            identifier: name,
+            phone
+          })
+        }
     );
 
-    if (!customer && mockDB.customers.length > 0) {
-      customer = mockDB.customers[0];
+    const text = await res.text();
+
+    let result;
+
+    try {
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = { message: text };
     }
 
-    if (!customer) {
-      throw new Error('Customer account not found!');
+    if (!res.ok) {
+      throw new Error(
+          result.message ||
+          result.error ||
+          'Customer account not found'
+      );
     }
 
-    return { success: true, role: 'CUSTOMER', customer };
+    return result;
   },
 
-  // 4. Get Seller Dashboard Summary
+
+  // ===================================================
+  // 4. SELLER DASHBOARD
+  // ===================================================
+
   async getSellerDashboard(sellerId) {
+
+    const res = await fetch(
+        `${API_BASE}/sellers/${sellerId}/dashboard`
+    );
+
+    const text = await res.text();
+
+    let result;
+
     try {
-      const res = await fetch(`${API_BASE}/sellers/${sellerId}/dashboard`);
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('REST API unavailable, retrieving local metrics:', e);
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = {};
     }
 
-    const seller = mockDB.sellers.find(s => s.id == sellerId) || mockDB.sellers[0];
-    const sellerCusts = mockDB.customers.filter(c => c.sellerId == sellerId || !c.sellerId);
-    let totalPurchases = 0;
-    let totalPayments = 0;
+    if (!res.ok) {
+      throw new Error(
+          result.message ||
+          result.error ||
+          'Unable to load seller dashboard'
+      );
+    }
 
-    sellerCusts.forEach(c => {
-      const custTx = mockDB.transactions.filter(t => t.customerId == c.id);
-      custTx.forEach(t => {
-        if (t.type === 'PURCHASE') totalPurchases += Number(t.amount);
-        if (t.type === 'PAYMENT') totalPayments += Number(t.amount);
-      });
-    });
-
-    const pendingDue = Math.max(0, totalPurchases - totalPayments);
-    return {
-      totalCustomers: sellerCusts.length,
-      totalPurchases,
-      totalPayments,
-      totalPendingDue: pendingDue,
-      storeName: seller ? seller.storeName : 'Gupta General Store'
-    };
+    return result;
   },
 
-  // 5. Get Customer Directory
+
+  // ===================================================
+  // 5. GET CUSTOMERS
+  // ===================================================
+
   async getCustomers(sellerId) {
+
+    const res = await fetch(
+        `${API_BASE}/sellers/${sellerId}/customers`
+    );
+
+    const text = await res.text();
+
+    let result;
+
     try {
-      const res = await fetch(`${API_BASE}/sellers/${sellerId}/customers`);
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('REST API unavailable, returning local customer list:', e);
+      result = text ? JSON.parse(text) : [];
+    } catch {
+      result = [];
     }
-    return mockDB.customers.filter(c => c.sellerId == sellerId || !c.sellerId);
+
+    if (!res.ok) {
+      throw new Error(
+          result.message ||
+          result.error ||
+          'Unable to load customers'
+      );
+    }
+
+    return result;
   },
 
-  // 6. Add Customer
+
+  // ===================================================
+  // 6. ADD CUSTOMER
+  // ===================================================
+
   async addCustomer(sellerId, customerData) {
+
+    const res = await fetch(
+        `${API_BASE}/sellers/${sellerId}/customers`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(customerData)
+        }
+    );
+
+    const text = await res.text();
+
+    let result;
+
     try {
-      const res = await fetch(`${API_BASE}/sellers/${sellerId}/customers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(customerData)
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('REST API unavailable, adding to local DB:', e);
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = { message: text };
     }
 
-    const newCust = {
-      id: Date.now(),
-      sellerId: Number(sellerId),
-      name: customerData.name,
-      phone: customerData.phone,
-      email: customerData.email || '',
-      address: customerData.address || ''
-    };
-    mockDB.customers.push(newCust);
-    saveLocalDB();
-    return newCust;
+    if (!res.ok) {
+      throw new Error(
+          result.message ||
+          result.error ||
+          `Customer save failed (${res.status})`
+      );
+    }
+
+    // IMPORTANT:
+    // No mockDB/customers push here.
+    // Backend must save customer to Aiven.
+    return result;
   },
 
-  // 7. Update Customer
+
+  // ===================================================
+  // 7. UPDATE CUSTOMER
+  // ===================================================
+
   async updateCustomer(customerId, updatedData) {
+
+    const res = await fetch(
+        `${API_BASE}/customers/${customerId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(updatedData)
+        }
+    );
+
+    const text = await res.text();
+
+    let result;
+
     try {
-      const res = await fetch(`${API_BASE}/customers/${customerId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('REST API unavailable, updating local DB:', e);
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = { message: text };
     }
 
-    const index = mockDB.customers.findIndex(c => c.id == customerId);
-    if (index !== -1) {
-      mockDB.customers[index] = {
-        ...mockDB.customers[index],
-        name: updatedData.name,
-        phone: updatedData.phone,
-        email: updatedData.email || '',
-        address: updatedData.address || ''
-      };
-      saveLocalDB();
-      return mockDB.customers[index];
+    if (!res.ok) {
+      throw new Error(
+          result.message ||
+          result.error ||
+          `Customer update failed (${res.status})`
+      );
     }
-    throw new Error("Customer not found!");
+
+    return result;
   },
 
-  // 8. Delete Customer
+
+  // ===================================================
+  // 8. DELETE CUSTOMER
+  // ===================================================
+
   async deleteCustomer(customerId) {
+
+    const res = await fetch(
+        `${API_BASE}/customers/${customerId}`,
+        {
+          method: 'DELETE'
+        }
+    );
+
+    const text = await res.text();
+
+    let result;
+
     try {
-      const res = await fetch(`${API_BASE}/customers/${customerId}`, {
-        method: 'DELETE'
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('REST API unavailable, deleting from local DB:', e);
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = { message: text };
     }
 
-    mockDB.customers = mockDB.customers.filter(c => c.id != customerId);
-    mockDB.transactions = mockDB.transactions.filter(t => t.customerId != customerId);
-    saveLocalDB();
-    return { success: true, message: 'Customer deleted successfully!' };
+    if (!res.ok) {
+      throw new Error(
+          result.message ||
+          result.error ||
+          `Customer deletion failed (${res.status})`
+      );
+    }
+
+    return result;
   },
 
-  // 9. Record Purchase
-  async recordPurchase(customerId, amount, description) {
+
+  // ===================================================
+  // 9. RECORD PURCHASE
+  // ===================================================
+
+  async recordPurchase(
+      customerId,
+      amount,
+      description
+  ) {
+
+    const res = await fetch(
+        `${API_BASE}/transactions/purchase`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            customerId,
+            amount,
+            description
+          })
+        }
+    );
+
+    const text = await res.text();
+
+    let result;
+
     try {
-      const res = await fetch(`${API_BASE}/transactions/purchase`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId, amount, description })
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('REST API unavailable, saving purchase locally:', e);
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = { message: text };
     }
 
-    const tx = {
-      id: Date.now(),
-      customerId: Number(customerId),
-      type: 'PURCHASE',
-      amount: Number(amount),
+    if (!res.ok) {
+      throw new Error(
+          result.message ||
+          result.error ||
+          `Purchase save failed (${res.status})`
+      );
+    }
+
+    // No local transaction fallback.
+    return result;
+  },
+
+
+  // ===================================================
+  // 10. RECORD PAYMENT
+  // ===================================================
+
+  async recordPayment(
+      customerId,
+      amount,
       description,
-      transactionDate: new Date().toISOString()
-    };
-    mockDB.transactions.push(tx);
-    saveLocalDB();
-    return { success: true, transaction: tx };
-  },
+      paymentId = null
+  ) {
 
-  // 10. Record Payment
-  async recordPayment(customerId, amount, description, paymentId = null) {
+    const res = await fetch(
+        `${API_BASE}/transactions/payment`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            customerId,
+            amount,
+            description,
+            paymentId
+          })
+        }
+    );
+
+    const text = await res.text();
+
+    let result;
+
     try {
-      const res = await fetch(`${API_BASE}/transactions/payment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId, amount, description, paymentId })
-      });
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('REST API unavailable, saving payment locally:', e);
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = { message: text };
     }
 
-    const tx = {
-      id: Date.now(),
-      customerId: Number(customerId),
-      type: 'PAYMENT',
-      amount: Number(amount),
-      description: description || 'Customer Payment',
-      transactionDate: new Date().toISOString(),
-      paymentId
-    };
-    mockDB.transactions.push(tx);
-    saveLocalDB();
-    return { success: true, transaction: tx };
+    if (!res.ok) {
+      throw new Error(
+          result.message ||
+          result.error ||
+          `Payment save failed (${res.status})`
+      );
+    }
+
+    // No local transaction fallback.
+    return result;
   },
 
-  // 11. Get Customer Statement
+
+  // ===================================================
+  // 11. CUSTOMER STATEMENT
+  // ===================================================
+
   async getCustomerStatement(customerId) {
+
+    const res = await fetch(
+        `${API_BASE}/customers/${customerId}/statement`
+    );
+
+    const text = await res.text();
+
+    let result;
+
     try {
-      const res = await fetch(`${API_BASE}/customers/${customerId}/statement`);
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('REST API unavailable, compiling local statement:', e);
+      result = text ? JSON.parse(text) : {};
+    } catch {
+      result = {};
     }
 
-    const customer = mockDB.customers.find(c => c.id == customerId) || mockDB.customers[0];
-    const txs = mockDB.transactions
-      .filter(t => t.customerId == customerId)
-      .sort((a, b) => new Date(b.transactionDate) - new Date(a.transactionDate));
+    if (!res.ok) {
+      throw new Error(
+          result.message ||
+          result.error ||
+          'Unable to load customer statement'
+      );
+    }
 
-    let totalPurchases = 0;
-    let totalPayments = 0;
-
-    txs.forEach(t => {
-      if (t.type === 'PURCHASE') totalPurchases += Number(t.amount);
-      if (t.type === 'PAYMENT') totalPayments += Number(t.amount);
-    });
-
-    const pendingDue = Math.max(0, totalPurchases - totalPayments);
-    return {
-      customer,
-      transactions: txs,
-      totalPurchases,
-      totalPayments,
-      pendingDue
-    };
+    return result;
   }
+
 };
