@@ -5,7 +5,7 @@
   and therefore in the Aiven MySQL database.
 */
 
-const API_BASE = '/api';
+const API_BASE = 'https://duetracker.onrender.com/api';
 
 // Keep local data only for existing frontend fallback/read compatibility.
 // Database-changing operations NEVER save to this local DB.
