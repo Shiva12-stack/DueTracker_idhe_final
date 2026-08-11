@@ -345,6 +345,7 @@
     ====================================================== */
     .action-wrap{display:flex;gap:.4rem;flex-wrap:wrap}
 
+
     /* ======================================================
        CUSTOMER PORTAL SPECIFIC
     ====================================================== */
@@ -355,6 +356,31 @@
       display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1.5rem;
     }
     .cust-header h2{font-size:2rem;font-weight:800}
+    .header-actions{
+      display:flex;
+      align-items:center;
+      gap:1rem;
+      flex-wrap:wrap;
+    }
+
+    .logout-btn{
+      background:transparent;
+      border:1px solid #ff4d4d;
+      color:#ff5b4d;
+      padding:.7rem 1.2rem;
+      border-radius:10px;
+      font-size:.9rem;
+      font-weight:700;
+      cursor:pointer;
+      transition:.25s;
+    }
+
+    .logout-btn:hover{
+      background:#ff4d4d;
+      color:white;
+      box-shadow:0 0 15px rgba(255,77,77,.4);
+    }
+
 
     /* ======================================================
        EMPTY STATE
@@ -786,7 +812,13 @@
             <span>Phone: <strong id="cp-phone" style="color:var(--text-light)">—</strong></span>
           </div>
         </div>
-        <div id="cp-pay-area"></div>
+        <div class="header-actions">
+          <div id="cp-pay-area"></div>
+
+          <button type="button" class="logout-btn" id="customer-logout-btn" onclick="App.logout()">
+            🚪 Logout
+          </button>
+        </div>
       </div>
 
       <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
@@ -927,11 +959,13 @@
     </div>
   </div>
 </div>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <!-- =====================================================
      JAVASCRIPT
 ====================================================== -->
 <script>
+
 /* ======================================================
    DATABASE — localStorage-backed
 ====================================================== */
@@ -1493,8 +1527,188 @@ const App = (() => {
   /* ==========================================================
      ONLINE PAYMENT (Razorpay simulation)
   ========================================================== */
-  function payOnline(amount) {
-    alert(`💳 Online Payment\n\nAmount: ₹${amount.toFixed(2)}\n\n(Razorpay integration requires a live server & Merchant key. For demo purposes, this is a simulation.)\n\nIn production, connect your Razorpay Key ID here.`);
+  async function payOnline(amount) {
+
+    if (!session || session.role !== 'customer') {
+      alert('Please login as a customer first.');
+      return;
+    }
+
+    try {
+
+      // 1. Create Razorpay order through Spring Boot
+      const orderResponse = await fetch('/api/razorpay/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: amount
+        })
+      });
+
+      if (!orderResponse.ok) {
+        throw new Error('Unable to create Razorpay order');
+      }
+
+      const order = await orderResponse.json();
+
+      // 2. Get current customer
+      const customer = DB.getAllCustomers()
+              .find(c => c.id === session.id);
+
+      if (!customer) {
+        throw new Error('Customer not found');
+      }
+
+      // 3. Razorpay Checkout options
+      const options = {
+
+        key: order.keyId,
+
+        amount: order.amount,
+
+        currency: 'INR',
+
+        name: 'DueTracker',
+
+        description: 'Payment of outstanding due',
+
+        order_id: order.id,
+
+        prefill: {
+          name: customer.name,
+          contact: '+91' + customer.phone,
+          email: customer.email || ''
+        },
+
+        theme: {
+          color: '#00b4d8'
+        },
+
+        handler: async function(response) {
+
+          try {
+
+            // 4. Send payment details to Spring Boot
+            const verifyResponse = await fetch(
+                    '/api/razorpay/verify',
+                    {
+                      method: 'POST',
+
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+
+                      body: JSON.stringify({
+                        razorpay_order_id:
+                        response.razorpay_order_id,
+
+                        razorpay_payment_id:
+                        response.razorpay_payment_id,
+
+                        razorpay_signature:
+                        response.razorpay_signature
+                      })
+                    }
+            );
+
+            const result = await verifyResponse.json();
+
+            if (!verifyResponse.ok || !result.success) {
+
+              alert(
+                      '❌ Payment verification failed.'
+              );
+
+              return;
+            }
+
+            // 5. Payment verified successfully
+            DB.addTransaction({
+
+              id: DB.uid(),
+
+              sellerId: session.sellerId,
+
+              customerId: session.id,
+
+              type: 'payment',
+
+              amount: amount,
+
+              description:
+                      'Razorpay Online Payment - ' +
+                      response.razorpay_payment_id,
+
+              date: new Date().toISOString()
+            });
+
+            // 6. Refresh customer dashboard
+            const updatedCustomer =
+                    DB.getAllCustomers()
+                            .find(c => c.id === session.id);
+
+            alert(
+                    '✅ Payment successful!\n\n' +
+                    'Payment ID: ' +
+                    response.razorpay_payment_id +
+                    '\n\nAmount: ₹' +
+                    amount.toFixed(2)
+            );
+
+            enterCustomerPortal(updatedCustomer);
+
+          } catch (error) {
+
+            console.error(error);
+
+            alert(
+                    '❌ Payment verification error.'
+            );
+          }
+        },
+
+        modal: {
+
+          ondismiss: function() {
+
+            console.log(
+                    'Razorpay Checkout closed'
+            );
+
+          }
+
+        }
+      };
+
+      // 7. Open Razorpay Checkout
+      const razorpay = new Razorpay(options);
+
+      razorpay.on('payment.failed', function(response) {
+
+        console.error(
+                'Payment failed:',
+                response.error
+        );
+
+        alert(
+                '❌ Payment failed.\n\n' +
+                response.error.description
+        );
+      });
+
+      razorpay.open();
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert(
+              '❌ Unable to start payment.\n\n' +
+              error.message
+      );
+    }
   }
 
   /* ==========================================================
@@ -1547,5 +1761,8 @@ const App = (() => {
 // Boot
 document.addEventListener('DOMContentLoaded', App.init);
 </script>
+<script src="/js/api.js"></script>
+<script src="/js/razorpay-handler.js"></script>
+<script src="/js/app.js"></script>
 </body>
 </html>

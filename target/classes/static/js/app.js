@@ -77,7 +77,11 @@ window.DueTrackerApp = {
     const layout = document.getElementById('app-layout');
     const topHeader = document.getElementById('top-header');
 
-    const isAuthPage = (viewId === 'view-landing' || viewId === 'view-seller-auth' || viewId === 'view-customer-auth');
+    const isAuthPage = (
+        viewId === 'view-landing' ||
+        viewId === 'view-seller-auth' ||
+        viewId === 'view-customer-auth'
+    );
 
     if (isAuthPage || !this.currentUser) {
       sidebar.classList.add('hidden');
@@ -162,6 +166,13 @@ window.DueTrackerApp = {
     this.currentUser = null;
     sessionStorage.removeItem('dt_active_session');
     this.navigateLanding();
+  },
+
+  /* CUSTOMER LOGOUT */
+  customerLogout() {
+    if (this.currentUser && this.currentUser.role === 'CUSTOMER') {
+      this.logout();
+    }
   },
 
   switchTab(tabId) {
@@ -522,10 +533,6 @@ window.DueTrackerApp = {
       document.getElementById('cust-profile-name').innerText = cust.name;
       document.getElementById('cust-profile-id').innerText = `#${cust.id}`;
       document.getElementById('cust-profile-phone').innerText = cust.phone;
-
-      document.getElementById('cust-stat-purchases').innerText = '₹' + this.formatCurrency(data.totalPurchases);
-      document.getElementById('cust-stat-payments').innerText = '₹' + this.formatCurrency(data.totalPayments);
-      document.getElementById('cust-stat-due').innerText = '₹' + this.formatCurrency(data.pendingDue);
 
       const payContainer = document.getElementById('cust-pay-container');
       if (data.pendingDue > 0) {
