@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DueTracker – Digital Credit Management System</title>
+  <meta name="description" content="DueTracker: Manage shop customers, credit purchases, payments and dues digitally. Separate Seller and Customer portals." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ======================================================
+       DESIGN SYSTEM TOKENS
+    ====================================================== */
+    :root, [data-theme="dark"] {
+      --bg: #050d1a;
+      --bg2: #080f1e;
+      --sidebar: #060c18;
+      --card: rgba(15,25,50,0.85);
+      --card-hover: rgba(22,38,72,0.9);
+      --border: rgba(255,255,255,0.08);
+      --border-accent: rgba(0,180,216,0.3);
+      --text: #f0f6ff;
+      --text-muted: #6b7fa3;
+      --text-light: #a8b8d8;
+      --accent: #00b4d8;
+      --accent2: #0077b6;
+      --green: #10b981;
+      --red: #f43f5e;
+      --purple: #a855f7;
+      --amber: #f59e0b;
+      --shadow: 0 20px 60px rgba(0,0,0,0.6);
+      --shadow-sm: 0 4px 20px rgba(0,0,0,0.3);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --sidebar-w: 255px;
+    }
+    [data-theme="light"] {
+      --bg: #eef2f8;
+      --bg2: #e4ecf7;
+      --sidebar: #ffffff;
+      --card: rgba(255,255,255,0.92);
+      --card-hover: #f5f9ff;
+      --border: rgba(0,0,0,0.07);
+      --border-accent: rgba(0,180,216,0.4);
+      --text: #0a1628;
+      --text-muted: #6b7fa3;
+      --text-light: #3a4a6b;
+      --shadow: 0 8px 30px rgba(0,0,0,0.1);
+      --shadow-sm: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    /* ======================================================
+       RESET & BASE
+    ====================================================== */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:'Plus Jakarta Sans',sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      transition:background .3s,color .3s;
+      overflow-x:hidden;
+    }
+    input,select,textarea,button{font-family:inherit}
+    a{text-decoration:none;color:inherit}
+
+    /* ======================================================
+       LAYOUT
+    ====================================================== */
+    #app{display:flex;min-height:100vh}
+
+    /* ======================================================
+       SIDEBAR
+    ====================================================== */
+    #sidebar{
+      width:var(--sidebar-w);
+      background:var(--sidebar);
+      border-right:1px solid var(--border);
+      position:fixed;top:0;left:0;bottom:0;
+      display:flex;flex-direction:column;
+      padding:1.5rem 1rem;
+      z-index:300;
+      transition:transform .3s;
+    }
+    #sidebar.hidden{display:none}
+
+    .sb-brand{
+      display:flex;align-items:center;gap:.75rem;
+      padding:.25rem .5rem 1.75rem;cursor:pointer;
+    }
+    .logo-box{
+      width:44px;height:44px;background:#fff;border-radius:12px;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 4px 16px rgba(0,0,0,.18);flex-shrink:0;
+    }
+    .brand-name{
+      font-family:'Outfit',sans-serif;font-size:1.55rem;
+      font-weight:800;color:var(--accent);letter-spacing:-.02em;
+    }
+
+    .sb-nav{list-style:none;display:flex;flex-direction:column;gap:.4rem;flex:1}
+    .sb-link{
+      display:flex;align-items:center;gap:.75rem;padding:.85rem 1.1rem;
+      border-radius:14px;font-family:'Outfit',sans-serif;font-size:1rem;
+      font-weight:600;color:var(--text-muted);cursor:pointer;
+      border:none;background:transparent;width:100%;text-align:left;
+      transition:all .2s;
+    }
+    .sb-link:hover{color:var(--text);background:rgba(255,255,255,.06)}
+    .sb-link.active{
+      background:var(--accent);color:#fff;
+      box-shadow:0 6px 20px rgba(0,180,216,.35);font-weight:700;
+    }
+    [data-theme="light"] .sb-link:hover{background:rgba(0,180,216,.07)}
+
+    .sb-footer{border-top:1px solid var(--border);padding-top:1rem;display:flex;flex-direction:column;gap:.6rem}
+    .theme-btn{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:.7rem 1rem;border-radius:var(--radius-sm);
+      background:var(--card);border:1px solid var(--border);
+      color:var(--text);font-size:.88rem;font-weight:600;cursor:pointer;
+      transition:background .2s;
+    }
+    .theme-btn:hover{background:var(--card-hover)}
+    .theme-pill{
+      background:rgba(0,180,216,.18);color:var(--accent);
+      padding:.15rem .55rem;border-radius:20px;font-size:.75rem;font-weight:700;
+    }
+    .btn-logout{
+      display:flex;align-items:center;justify-content:center;gap:.5rem;
+      padding:.75rem;border-radius:var(--radius-sm);
+      background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.2);
+      color:var(--red);font-weight:600;font-size:.9rem;cursor:pointer;
+      transition:all .2s;
+    }
+    .btn-logout:hover{background:var(--red);color:#fff}
+
+    /* ======================================================
+       MAIN CONTENT
+    ====================================================== */
+    #main{
+      margin-left:var(--sidebar-w);
+      flex:1;padding:2rem 2.25rem;
+      min-height:100vh;
+      transition:margin-left .3s;
+    }
+    #main.no-sidebar{margin-left:0;display:flex;align-items:center;justify-content:center}
+
+    /* ======================================================
+       VIEWS (PAGES)
+    ====================================================== */
+    .view{display:none}
+    .view.active{display:block;animation:fadeIn .3s ease}
+    .view.center-view{
+      display:none;flex-direction:column;
+      align-items:center;justify-content:center;min-height:100vh;
+    }
+    .view.center-view.active{display:flex}
+
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ======================================================
+       AUTH CARDS
+    ====================================================== */
+    .auth-card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:24px;padding:2.5rem;width:100%;max-width:440px;
+      box-shadow:var(--shadow);
+    }
+    .auth-logo{
+      display:flex;flex-direction:column;align-items:center;gap:.5rem;
+      margin-bottom:1.75rem;
+    }
+    .auth-logo .logo-box{width:58px;height:58px;border-radius:16px}
+    .auth-logo .brand-name{font-size:1.9rem}
+
+    /* ======================================================
+       LANDING SELECTOR
+    ====================================================== */
+    .landing-card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:24px;padding:2.75rem;width:100%;max-width:480px;
+      text-align:center;box-shadow:var(--shadow);
+    }
+    .landing-card h2{font-size:1.65rem;font-weight:700;margin-bottom:.4rem}
+    .landing-card p{color:var(--text-muted);font-size:.9rem;margin-bottom:2rem}
+    .portal-btns{display:flex;flex-direction:column;gap:1rem}
+
+    /* ======================================================
+       METRIC CARDS
+    ====================================================== */
+    .metrics{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:1.25rem;margin-bottom:2rem;
+    }
+    @media(max-width:1100px){.metrics{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:640px){.metrics{grid-template-columns:1fr}}
+
+    .metric{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:var(--radius);padding:1.4rem 1.5rem;
+      box-shadow:var(--shadow-sm);
+    }
+    .metric-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+    .metric-label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+    .metric-icon{
+      width:42px;height:42px;border-radius:11px;
+      display:flex;align-items:center;justify-content:center;font-size:1.2rem;
+    }
+    .ico-blue{background:rgba(56,189,248,.14);color:#38bdf8}
+    .ico-purple{background:rgba(168,85,247,.14);color:#a855f7}
+    .ico-green{background:rgba(16,185,129,.14);color:#10b981}
+    .ico-red{background:rgba(244,63,94,.14);color:#f43f5e}
+    .metric-val{font-family:'Outfit',sans-serif;font-size:1.85rem;font-weight:700;color:var(--text)}
+    .metric-val.danger{color:var(--red)}
+    .metric-sub{font-size:.8rem;color:var(--text-muted);margin-top:.2rem}
+
+    /* ======================================================
+       PANELS & TABLES
+    ====================================================== */
+    .panel{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:var(--radius);padding:1.75rem;
+      margin-bottom:1.75rem;box-shadow:var(--shadow-sm);
+    }
+    .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem}
+    .panel-head h3{font-size:1.15rem;font-weight:700}
+
+    .tbl-wrap{width:100%;overflow-x:auto}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    th{
+      background:rgba(0,0,0,.06);color:var(--text-muted);
+      font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;
+      padding:.9rem 1rem;border-bottom:1px solid var(--border);
+      font-weight:700;white-space:nowrap;
+    }
+    [data-theme="dark"] th{background:rgba(5,13,26,.7)}
+    td{
+      padding:.9rem 1rem;border-bottom:1px solid var(--border);
+      font-size:.93rem;color:var(--text-light);
+    }
+    tbody tr:hover td{background:var(--card-hover)}
+    tbody tr:last-child td{border-bottom:none}
+
+    .badge{
+      padding:.25rem .7rem;border-radius:50px;font-size:.78rem;
+      font-weight:700;display:inline-block;
+    }
+    .badge-purchase{background:rgba(244,63,94,.14);color:var(--red);border:1px solid rgba(244,63,94,.25)}
+    .badge-payment{background:rgba(16,185,129,.14);color:var(--green);border:1px solid rgba(16,185,129,.25)}
+
+    /* ======================================================
+       BUTTONS
+    ====================================================== */
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:.45rem;
+      padding:.72rem 1.3rem;border-radius:var(--radius-sm);font-weight:700;
+      font-size:.92rem;cursor:pointer;border:none;
+      transition:all .2s ease;white-space:nowrap;
+    }
+    .btn-block{width:100%}
+    .btn-lg{padding:1rem 1.6rem;font-size:1rem;border-radius:16px}
+    .btn-sm{padding:.45rem .9rem;font-size:.82rem;border-radius:9px}
+
+    .btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(0,180,216,.3)}
+    .btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
+    .btn-secondary{background:var(--card-hover);color:var(--text);border:1px solid var(--border)}
+    .btn-secondary:hover{border-color:var(--accent)}
+    .btn-success{background:var(--green);color:#fff;box-shadow:0 4px 16px rgba(16,185,129,.3)}
+    .btn-success:hover{background:#059669}
+    .btn-warning{background:var(--amber);color:#fff;box-shadow:0 4px 14px rgba(245,158,11,.3)}
+    .btn-warning:hover{background:#d97706}
+    .btn-danger{background:rgba(244,63,94,.12);color:var(--red);border:1px solid rgba(244,63,94,.25)}
+    .btn-danger:hover{background:var(--red);color:#fff}
+    .btn-info{background:rgba(56,189,248,.14);color:#38bdf8;border:1px solid rgba(56,189,248,.25)}
+    .btn-whatsapp{background:#25D366;color:#fff;box-shadow:0 4px 14px rgba(37,211,102,.3)}
+    .btn-whatsapp:hover{background:#1fba58}
+
+    /* ======================================================
+       FORMS
+    ====================================================== */
+    .form-group{margin-bottom:1.15rem;display:flex;flex-direction:column;gap:.35rem}
+    .form-group label{font-size:.85rem;font-weight:700;color:var(--text-light)}
+    .input{
+      width:100%;background:rgba(0,0,0,.06);border:1.5px solid var(--border);
+      border-radius:var(--radius-sm);padding:.8rem 1rem;color:var(--text);
+      font-size:.93rem;transition:border .2s,box-shadow .2s;
+    }
+    [data-theme="dark"] .input{background:rgba(5,13,26,.6)}
+    .input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,180,216,.2)}
+    .input::placeholder{color:var(--text-muted)}
+    textarea.input{resize:vertical;min-height:68px}
+
+    .pw-wrap{position:relative;display:flex;align-items:center}
+    .pw-wrap .input{padding-right:4.5rem}
+    .pw-toggle{
+      position:absolute;right:10px;
+      background:rgba(0,180,216,.12);border:1px solid rgba(0,180,216,.25);
+      color:var(--accent);font-size:.78rem;font-weight:800;
+      padding:.3rem .6rem;border-radius:8px;cursor:pointer;transition:all .2s;
+    }
+    .pw-toggle:hover{background:var(--accent);color:#fff}
+
+    .alert{padding:.8rem 1rem;border-radius:var(--radius-sm);font-size:.88rem;margin-bottom:1rem}
+    .alert-err{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.25);color:var(--red)}
+    .alert-ok{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:var(--green)}
+
+    /* ======================================================
+       MODALS
+    ====================================================== */
+    .overlay{
+      position:fixed;inset:0;background:rgba(2,6,20,.82);
+      backdrop-filter:blur(8px);z-index:999;
+      display:flex;align-items:center;justify-content:center;
+      opacity:0;pointer-events:none;transition:opacity .25s;
+    }
+    .overlay.open{opacity:1;pointer-events:auto}
+    .modal{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:24px;padding:2.25rem;width:90%;max-width:480px;
+      box-shadow:var(--shadow);max-height:90vh;overflow-y:auto;
+    }
+    .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+    .modal-head h3{font-size:1.2rem;font-weight:700}
+    .modal-close{background:none;border:none;font-size:1.6rem;color:var(--text-muted);cursor:pointer;line-height:1}
+    .modal-close:hover{color:var(--text)}
+
+    /* ======================================================
+       TOOLBAR
+    ====================================================== */
+    .toolbar{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:var(--radius);padding:1.2rem 1.6rem;
+      margin-bottom:1.75rem;display:flex;flex-wrap:wrap;
+      align-items:center;justify-content:space-between;gap:1rem;
+    }
+    .toolbar h3{font-size:1.1rem;font-weight:700}
+    .btn-group{display:flex;gap:.65rem;flex-wrap:wrap}
+
+    /* ======================================================
+       ACTION BUTTONS IN TABLE
+    ====================================================== */
+    .action-wrap{display:flex;gap:.4rem;flex-wrap:wrap}
+
+    /* ======================================================
+       CUSTOMER PORTAL SPECIFIC
+    ====================================================== */
+    .cust-header{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:var(--radius);padding:1.75rem 2rem;
+      margin-bottom:1.75rem;box-shadow:var(--shadow-sm);
+      display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1.5rem;
+    }
+    .cust-header h2{font-size:2rem;font-weight:800}
+
+    /* ======================================================
+       EMPTY STATE
+    ====================================================== */
+    .empty{
+      text-align:center;padding:3rem 1rem;color:var(--text-muted);font-size:.95rem;
+    }
+    .empty-icon{font-size:2.5rem;margin-bottom:.5rem}
+    .empty h4{color:var(--text-light);font-size:1.05rem;margin-bottom:.35rem}
+
+    /* ======================================================
+       TOP HEADER
+    ====================================================== */
+    .topbar{
+      display:flex;justify-content:space-between;align-items:center;
+      margin-bottom:2rem;flex-wrap:wrap;gap:1rem;
+    }
+    .page-title{font-family:'Outfit',sans-serif;font-size:1.65rem;font-weight:800}
+    .topbar-meta{display:flex;align-items:center;gap:.75rem}
+    .store-chip{
+      background:rgba(0,180,216,.12);border:1px solid rgba(0,180,216,.25);
+      color:var(--accent);padding:.35rem .85rem;border-radius:50px;
+      font-size:.83rem;font-weight:700;
+    }
+
+    /* ======================================================
+       TABS
+    ====================================================== */
+    .tab-content{display:none}
+    .tab-content.active{display:block;animation:fadeIn .3s ease}
+
+    /* Settings */
+    .settings-panel{max-width:580px}
+    .divider{border:none;border-top:1px solid var(--border);margin:1.5rem 0}
+
+    /* ======================================================
+       RESPONSIVE
+    ====================================================== */
+    @media(max-width:768px){
+      #sidebar{transform:translateX(-100%)}
+      #sidebar.open{transform:translateX(0)}
+      #main{margin-left:0!important}
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- =====================================================
+       SIDEBAR
+  ====================================================== -->
+  <aside id="sidebar" class="hidden">
+    <div>
+      <div class="sb-brand" onclick="App.goHome()">
+        <div class="logo-box">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path d="M4 19V14" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round"/>
+            <path d="M9 19V10" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+            <path d="M14 19V6" stroke="#00b4d8" stroke-width="3" stroke-linecap="round"/>
+            <path d="M19 19V3" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="brand-name">DueTracker</span>
+      </div>
+
+      <ul class="sb-nav" id="sb-nav">
+        <li><button class="sb-link active" data-tab="dashboard" onclick="App.tab('dashboard')">
+          <span>📊</span><span>Dashboard</span>
+        </button></li>
+        <li><button class="sb-link" data-tab="customers" onclick="App.tab('customers')">
+          <span>👥</span><span>Customers</span>
+        </button></li>
+        <li><button class="sb-link" data-tab="transactions" onclick="App.tab('transactions')">
+          <span>💳</span><span>Transactions</span>
+        </button></li>
+        <li><button class="sb-link" data-tab="settings" onclick="App.tab('settings')">
+          <span>⚙️</span><span>Settings</span>
+        </button></li>
+      </ul>
+    </div>
+
+    <div class="sb-footer">
+      <button class="theme-btn" onclick="App.toggleTheme()">
+        <span id="theme-label">🌙 Dark Mode</span>
+        <span class="theme-pill" id="theme-badge">ON</span>
+      </button>
+      <button class="btn-logout" onclick="App.logout()">🚪 Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- =====================================================
+       MAIN
+  ====================================================== -->
+  <main id="main" class="no-sidebar">
+
+    <!-- =================== LANDING ==================== -->
+    <div id="view-landing" class="view center-view active">
+      <div class="landing-card">
+        <div class="auth-logo" style="margin-bottom:1.5rem">
+          <div class="logo-box" style="width:64px;height:64px;border-radius:18px">
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+              <path d="M4 19V14" stroke="#8b5cf6" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M9 19V10" stroke="#10b981" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M14 19V6" stroke="#00b4d8" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M19 19V3" stroke="#3b82f6" stroke-width="3.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="brand-name" style="font-size:2.1rem">DueTracker</span>
+        </div>
+        <h2>Digital Credit Management</h2>
+        <p>Manage shop credit ledgers, customers, purchases &amp; dues digitally — no notebook required.</p>
+        <div class="portal-btns">
+          <button class="btn btn-primary btn-lg btn-block" onclick="App.showView('view-seller-auth')">
+            🏪 Shop Owner Sign In
+          </button>
+          <button class="btn btn-secondary btn-lg btn-block" onclick="App.showView('view-customer-auth')">
+            👤 Customer Sign In
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================== SHOP OWNER AUTH ==================== -->
+    <div id="view-seller-auth" class="view center-view">
+
+      <!-- Login box -->
+      <div id="seller-login-card" class="auth-card">
+        <div class="auth-logo">
+          <div class="logo-box">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path d="M4 19V14" stroke="#8b5cf6" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M9 19V10" stroke="#10b981" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M14 19V6" stroke="#00b4d8" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M19 19V3" stroke="#3b82f6" stroke-width="3.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="brand-name">DueTracker</span>
+        </div>
+        <div style="text-align:center;margin-bottom:1.5rem">
+          <h2 style="font-size:1.55rem;font-weight:800">Shop Owner Sign In</h2>
+          <p style="color:var(--text-muted);font-size:.88rem;margin-top:.3rem">Access your shop credit management dashboard</p>
+        </div>
+        <div id="sl-alert"></div>
+        <form onsubmit="App.sellerLogin(event)">
+          <div class="form-group">
+            <label>Email Address or Phone Number</label>
+            <input id="sl-email" type="text" class="input" placeholder="Enter your email or phone" required />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <div class="pw-wrap">
+              <input id="sl-pass" type="password" class="input" placeholder="••••••••" required />
+              <button type="button" class="pw-toggle" onclick="App.togglePw('sl-pass',this)">Show</button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:1.25rem">Sign In</button>
+        </form>
+        <p style="text-align:center;margin-top:1.4rem;font-size:.88rem;color:var(--text-muted)">
+          New shop owner? <a onclick="App.sellerMode('register')" style="color:var(--accent);cursor:pointer;font-weight:700">Register here</a>
+        </p>
+        <p style="text-align:center;margin-top:.6rem;font-size:.82rem">
+          <a onclick="App.showView('view-landing')" style="color:var(--text-muted);cursor:pointer">← Back to Main Menu</a>
+        </p>
+      </div>
+
+      <!-- Register box -->
+      <div id="seller-register-card" class="auth-card" style="display:none">
+        <div class="auth-logo">
+          <div class="logo-box">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path d="M4 19V14" stroke="#8b5cf6" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M9 19V10" stroke="#10b981" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M14 19V6" stroke="#00b4d8" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M19 19V3" stroke="#3b82f6" stroke-width="3.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="brand-name">DueTracker</span>
+        </div>
+        <div style="text-align:center;margin-bottom:1.5rem">
+          <h2 style="font-size:1.55rem;font-weight:800">Register Shop Account</h2>
+          <p style="color:var(--text-muted);font-size:.88rem;margin-top:.3rem">Create your shop account to get started</p>
+        </div>
+        <div id="sr-alert"></div>
+        <form onsubmit="App.sellerRegister(event)">
+          <div class="form-group">
+            <label>Owner Full Name *</label>
+            <input id="sr-name" type="text" class="input" placeholder="e.g. Ramesh Gupta" required />
+          </div>
+          <div class="form-group">
+            <label>Store / Shop Name *</label>
+            <input id="sr-store" type="text" class="input" placeholder="e.g. Gupta General Store" required />
+          </div>
+          <div class="form-group">
+            <label>Email Address *</label>
+            <input id="sr-email" type="email" class="input" placeholder="ramesh@guptastore.com" required />
+          </div>
+          <div class="form-group">
+            <label>Phone Number *</label>
+            <input id="sr-phone" type="tel" class="input" placeholder="9876543210" required />
+          </div>
+          <div class="form-group">
+            <label>Password *</label>
+            <div class="pw-wrap">
+              <input id="sr-pass" type="password" class="input" placeholder="Minimum 6 characters" required />
+              <button type="button" class="pw-toggle" onclick="App.togglePw('sr-pass',this)">Show</button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:1.25rem">Create Account</button>
+        </form>
+        <p style="text-align:center;margin-top:1.4rem;font-size:.88rem;color:var(--text-muted)">
+          Already registered? <a onclick="App.sellerMode('login')" style="color:var(--accent);cursor:pointer;font-weight:700">Sign In</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- =================== CUSTOMER AUTH ==================== -->
+    <div id="view-customer-auth" class="view center-view">
+      <div class="auth-card">
+        <div class="auth-logo">
+          <div class="logo-box">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path d="M4 19V14" stroke="#8b5cf6" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M9 19V10" stroke="#10b981" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M14 19V6" stroke="#00b4d8" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M19 19V3" stroke="#3b82f6" stroke-width="3.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="brand-name">DueTracker</span>
+        </div>
+        <div style="text-align:center;margin-bottom:1.5rem">
+          <h2 style="font-size:1.55rem;font-weight:800">Customer Sign In</h2>
+          <p style="color:var(--text-muted);font-size:.88rem;margin-top:.3rem">View your account statement &amp; pay dues online</p>
+        </div>
+        <div id="cl-alert"></div>
+        <form onsubmit="App.customerLogin(event)">
+          <div class="form-group">
+            <label>Registered Full Name *</label>
+            <input id="cl-name" type="text" class="input" placeholder="e.g. Rahul Sharma" required />
+          </div>
+          <div class="form-group">
+            <label>Registered Phone Number *</label>
+            <input id="cl-phone" type="tel" class="input" placeholder="9123456789" required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:1.25rem">Sign In</button>
+        </form>
+        <p style="text-align:center;margin-top:1.4rem;font-size:.82rem">
+          <a onclick="App.showView('view-landing')" style="color:var(--text-muted);cursor:pointer">← Back to Main Menu</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- =================== SELLER PORTAL ==================== -->
+    <div id="view-seller-portal" class="view">
+
+      <!-- Topbar -->
+      <div class="topbar">
+        <h1 class="page-title" id="page-title">Dashboard</h1>
+        <div class="topbar-meta">
+          <span class="store-chip" id="store-chip">My Shop</span>
+        </div>
+      </div>
+
+      <!-- TAB: Dashboard -->
+      <div id="tab-dashboard" class="tab-content active">
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-head">
+              <span class="metric-label">Total Customers</span>
+              <div class="metric-icon ico-blue">👥</div>
+            </div>
+            <div class="metric-val" id="m-customers">0</div>
+            <div class="metric-sub">Registered customers</div>
+          </div>
+          <div class="metric">
+            <div class="metric-head">
+              <span class="metric-label">Total Purchases</span>
+              <div class="metric-icon ico-purple">🛒</div>
+            </div>
+            <div class="metric-val" id="m-purchases">₹0.00</div>
+            <div class="metric-sub">Total credit given</div>
+          </div>
+          <div class="metric">
+            <div class="metric-head">
+              <span class="metric-label">Total Payments</span>
+              <div class="metric-icon ico-green">💵</div>
+            </div>
+            <div class="metric-val" id="m-payments">₹0.00</div>
+            <div class="metric-sub">Total received</div>
+          </div>
+          <div class="metric">
+            <div class="metric-head">
+              <span class="metric-label">Pending Dues</span>
+              <div class="metric-icon ico-red">⚠️</div>
+            </div>
+            <div class="metric-val danger" id="m-dues">₹0.00</div>
+            <div class="metric-sub">Total outstanding</div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <h3>Quick Operations</h3>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="App.openModal('modal-add-cust')">➕ Add Customer</button>
+            <button class="btn btn-secondary" onclick="App.openModal('modal-purchase')">🛍️ Record Purchase</button>
+            <button class="btn btn-success" onclick="App.openModal('modal-payment')">💰 Record Payment</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Customer Accounts &amp; Dues</h3>
+            <button class="btn btn-secondary btn-sm" onclick="App.refreshDash()">🔄 Refresh</button>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Customer Name</th>
+                  <th>Phone</th>
+                  <th>Purchases</th>
+                  <th>Payments</th>
+                  <th>Due</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="dash-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Customers -->
+      <div id="tab-customers" class="tab-content">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Customer Directory</h3>
+            <button class="btn btn-primary" onclick="App.openModal('modal-add-cust')">➕ Add New Customer</button>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>Email</th>
+                  <th>Address</th>
+                  <th>Balance</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="cust-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Transactions -->
+      <div id="tab-transactions" class="tab-content">
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Transaction History</h3>
+            <div class="btn-group">
+              <button class="btn btn-secondary btn-sm" onclick="App.openModal('modal-purchase')">+ Purchase</button>
+              <button class="btn btn-success btn-sm" onclick="App.openModal('modal-payment')">+ Payment</button>
+            </div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date &amp; Time</th>
+                  <th>Customer</th>
+                  <th>Type</th>
+                  <th>Amount (₹)</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody id="txn-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Settings -->
+      <div id="tab-settings" class="tab-content">
+        <div class="panel settings-panel">
+          <h3 style="margin-bottom:1.25rem">Store Profile &amp; Settings</h3>
+          <form onsubmit="App.saveSettings(event)">
+            <div class="form-group">
+              <label>Store / Shop Name</label>
+              <input id="s-store" type="text" class="input" />
+            </div>
+            <div class="form-group">
+              <label>Owner Name</label>
+              <input id="s-name" type="text" class="input" readonly style="opacity:.7" />
+            </div>
+            <div class="form-group">
+              <label>Email Address</label>
+              <input id="s-email" type="text" class="input" readonly style="opacity:.7" />
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input id="s-phone" type="text" class="input" readonly style="opacity:.7" />
+            </div>
+            <hr class="divider" />
+            <div class="form-group">
+              <label>Theme</label>
+              <button type="button" class="theme-btn" onclick="App.toggleTheme()" style="width:100%">
+                <span id="s-theme-label">Interface Theme</span>
+                <span class="theme-pill">Toggle</span>
+              </button>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top:.75rem">Save Settings</button>
+          </form>
+        </div>
+      </div>
+
+    </div><!-- end view-seller-portal -->
+
+    <!-- =================== CUSTOMER DASHBOARD ==================== -->
+    <div id="view-customer-dashboard" class="view">
+      <div class="cust-header">
+        <div>
+          <h2 id="cp-name">Customer Name</h2>
+          <div style="color:var(--text-muted);font-size:.9rem;margin-top:.3rem;display:flex;gap:1.5rem;flex-wrap:wrap">
+            <span>Phone: <strong id="cp-phone" style="color:var(--text-light)">—</strong></span>
+          </div>
+        </div>
+        <div id="cp-pay-area"></div>
+      </div>
+
+      <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+        <div class="metric">
+          <div class="metric-head">
+            <span class="metric-label">Total Purchases</span>
+            <div class="metric-icon ico-purple">🛒</div>
+          </div>
+          <div class="metric-val" id="cp-purchases">₹0.00</div>
+        </div>
+        <div class="metric">
+          <div class="metric-head">
+            <span class="metric-label">Total Payments</span>
+            <div class="metric-icon ico-green">💵</div>
+          </div>
+          <div class="metric-val" id="cp-payments">₹0.00</div>
+        </div>
+        <div class="metric" style="border-color:rgba(244,63,94,.3)">
+          <div class="metric-head">
+            <span class="metric-label">Amount Due</span>
+            <div class="metric-icon ico-red">⏳</div>
+          </div>
+          <div class="metric-val danger" id="cp-due">₹0.00</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin-bottom:1.25rem">My Transaction Statement</h3>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Type</th><th>Amount (₹)</th><th>Description</th></tr>
+            </thead>
+            <tbody id="cp-txn-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- =====================================================
+     MODALS
+====================================================== -->
+
+<!-- Add Customer -->
+<div id="modal-add-cust" class="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>➕ Add New Customer</h3>
+      <button class="modal-close" onclick="App.closeModal('modal-add-cust')">&times;</button>
+    </div>
+    <form onsubmit="App.addCustomer(event)">
+      <div class="form-group"><label>Full Name *</label><input id="ac-name" type="text" class="input" required placeholder="e.g. Suresh Patel"/></div>
+      <div class="form-group"><label>Phone Number *</label><input id="ac-phone" type="tel" class="input" required placeholder="9812345678"/></div>
+      <div class="form-group"><label>Email Address</label><input id="ac-email" type="email" class="input" placeholder="suresh@gmail.com"/></div>
+      <div class="form-group"><label>Address</label><textarea id="ac-addr" class="input" placeholder="Locality, City"></textarea></div>
+      <div style="display:flex;gap:.9rem;margin-top:1.5rem">
+        <button type="button" class="btn btn-secondary" style="flex:1" onclick="App.closeModal('modal-add-cust')">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="flex:1">Save Customer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Customer -->
+<div id="modal-edit-cust" class="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>✏️ Edit Customer</h3>
+      <button class="modal-close" onclick="App.closeModal('modal-edit-cust')">&times;</button>
+    </div>
+    <form onsubmit="App.updateCustomer(event)">
+      <input type="hidden" id="ec-id"/>
+      <div class="form-group"><label>Full Name *</label><input id="ec-name" type="text" class="input" required/></div>
+      <div class="form-group"><label>Phone Number *</label><input id="ec-phone" type="tel" class="input" required/></div>
+      <div class="form-group"><label>Email Address</label><input id="ec-email" type="email" class="input"/></div>
+      <div class="form-group"><label>Address</label><textarea id="ec-addr" class="input"></textarea></div>
+      <div style="display:flex;gap:.9rem;margin-top:1.5rem">
+        <button type="button" class="btn btn-secondary" style="flex:1" onclick="App.closeModal('modal-edit-cust')">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="flex:1">Update Customer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Record Purchase -->
+<div id="modal-purchase" class="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>🛍️ Record Purchase</h3>
+      <button class="modal-close" onclick="App.closeModal('modal-purchase')">&times;</button>
+    </div>
+    <form onsubmit="App.addPurchase(event)">
+      <div class="form-group"><label>Select Customer *</label><select id="pur-cust" class="input" required></select></div>
+      <div class="form-group"><label>Amount (₹) *</label><input id="pur-amt" type="number" step="0.01" min="1" class="input" required placeholder="0.00"/></div>
+      <div class="form-group"><label>Description / Items</label><input id="pur-desc" type="text" class="input" placeholder="e.g. Rice 5kg, Sugar 2kg"/></div>
+      <div style="display:flex;gap:.9rem;margin-top:1.5rem">
+        <button type="button" class="btn btn-secondary" style="flex:1" onclick="App.closeModal('modal-purchase')">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="flex:1">Save Purchase</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Record Payment -->
+<div id="modal-payment" class="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>💰 Record Payment</h3>
+      <button class="modal-close" onclick="App.closeModal('modal-payment')">&times;</button>
+    </div>
+    <form onsubmit="App.addPayment(event)">
+      <div class="form-group"><label>Select Customer *</label><select id="pay-cust" class="input" required></select></div>
+      <div class="form-group"><label>Amount (₹) *</label><input id="pay-amt" type="number" step="0.01" min="1" class="input" required placeholder="0.00"/></div>
+      <div class="form-group"><label>Payment Method / Description</label><input id="pay-desc" type="text" class="input" placeholder="e.g. Cash, UPI, Cheque"/></div>
+      <div style="display:flex;gap:.9rem;margin-top:1.5rem">
+        <button type="button" class="btn btn-secondary" style="flex:1" onclick="App.closeModal('modal-payment')">Cancel</button>
+        <button type="submit" class="btn btn-success" style="flex:1">Save Payment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Send Reminder -->
+<div id="modal-remind" class="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>🔔 Payment Reminder</h3>
+      <button class="modal-close" onclick="App.closeModal('modal-remind')">&times;</button>
+    </div>
+    <div id="remind-preview" style="background:var(--card-hover);padding:1.1rem;border-radius:12px;font-size:.92rem;margin-bottom:1.5rem;line-height:1.6;border:1px solid var(--border)"></div>
+    <div style="display:flex;flex-direction:column;gap:.75rem">
+      <button id="remind-wa-btn" class="btn btn-whatsapp btn-block">💬 Send via WhatsApp</button>
+      <button id="remind-copy-btn" class="btn btn-secondary btn-block">📋 Copy Message</button>
+      <button class="btn btn-secondary btn-block" onclick="App.closeModal('modal-remind')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+     JAVASCRIPT
+====================================================== -->
+<script>
+/* ======================================================
+   DATABASE — localStorage-backed
+====================================================== */
+const DB = {
+  // Keys
+  SELLERS_KEY:      'dt_sellers',
+  CUSTOMERS_KEY:    'dt_customers',
+  TRANSACTIONS_KEY: 'dt_transactions',
+  SESSION_KEY:      'dt_session',
+
+  load(key) {
+    try { return JSON.parse(localStorage.getItem(key) || '[]'); }
+    catch { return []; }
+  },
+  save(key, data) { localStorage.setItem(key, JSON.stringify(data)); },
+
+  // SELLERS
+  getSellers()             { return this.load(this.SELLERS_KEY); },
+  saveSellers(d)           { this.save(this.SELLERS_KEY, d); },
+  getSellerByEmail(e)      { return this.getSellers().find(s => s.email.toLowerCase() === e.toLowerCase()); },
+  getSellerByPhone(p)      { return this.getSellers().find(s => s.phone === p); },
+  addSeller(s)             { const d = this.getSellers(); d.push(s); this.saveSellers(d); },
+  updateSeller(id, fields) {
+    const d = this.getSellers().map(s => s.id === id ? {...s,...fields} : s);
+    this.saveSellers(d);
+  },
+
+  // CUSTOMERS — scoped to seller
+  getCustomers(sellerId)   { return this.load(this.CUSTOMERS_KEY).filter(c => c.sellerId === sellerId); },
+  getAllCustomers()         { return this.load(this.CUSTOMERS_KEY); },
+  addCustomer(c)           { const d = this.getAllCustomers(); d.push(c); this.save(this.CUSTOMERS_KEY, d); },
+  updateCustomer(id, f)    {
+    const d = this.getAllCustomers().map(c => c.id === id ? {...c,...f} : c);
+    this.save(this.CUSTOMERS_KEY, d);
+  },
+  deleteCustomer(id)       {
+    const d = this.getAllCustomers().filter(c => c.id !== id);
+    this.save(this.CUSTOMERS_KEY, d);
+    // Also delete transactions for this customer
+    const t = this.load(this.TRANSACTIONS_KEY).filter(t => t.customerId !== id);
+    this.save(this.TRANSACTIONS_KEY, t);
+  },
+  findCustomer(name, phone) {
+    return this.getAllCustomers().find(
+      c => c.name.toLowerCase() === name.toLowerCase() && c.phone === phone
+    );
+  },
+
+  // TRANSACTIONS
+  getTransactions(sellerId){ return this.load(this.TRANSACTIONS_KEY).filter(t => t.sellerId === sellerId); },
+  getCustomerTransactions(custId){ return this.load(this.TRANSACTIONS_KEY).filter(t => t.customerId === custId); },
+  addTransaction(t)        { const d = this.load(this.TRANSACTIONS_KEY); d.push(t); this.save(this.TRANSACTIONS_KEY, d); },
+
+  // SESSION
+  getSession()             {
+    try { return JSON.parse(localStorage.getItem(this.SESSION_KEY) || 'null'); }
+    catch { return null; }
+  },
+  setSession(d)            { localStorage.setItem(this.SESSION_KEY, JSON.stringify(d)); },
+  clearSession()           { localStorage.removeItem(this.SESSION_KEY); },
+
+  // HELPERS
+  uid()                    { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); },
+
+  // Compute balances for a customer
+  getBalance(custId) {
+    const txns = this.getCustomerTransactions(custId);
+    let purchases = 0, payments = 0;
+    txns.forEach(t => {
+      if (t.type === 'purchase') purchases += t.amount;
+      else payments += t.amount;
+    });
+    return { purchases, payments, due: Math.max(0, purchases - payments) };
+  }
+};
+
+/* Seed demo seller if none exists */
+(function seedDemo() {
+  if (DB.getSellers().length === 0) {
+    DB.addSeller({
+      id: 'seller_demo',
+      name: 'Ramesh Gupta',
+      storeName: 'Gupta General Store',
+      email: 'ramesh@guptastore.com',
+      phone: '9876543210',
+      password: 'seller123',
+      createdAt: new Date().toISOString()
+    });
+  }
+  // Seed demo customers if none
+  const seller = DB.getSellers()[0];
+  if (DB.getCustomers(seller.id).length === 0) {
+    const c1 = { id:'cust_001', sellerId: seller.id, name:'Rahul Sharma', phone:'9123456789', email:'rahul@email.com', address:'Gandhi Nagar, Delhi', createdAt: new Date().toISOString() };
+    const c2 = { id:'cust_002', sellerId: seller.id, name:'Priya Patel', phone:'9876512345', email:'', address:'MG Road, Ahmedabad', createdAt: new Date().toISOString() };
+    DB.addCustomer(c1);
+    DB.addCustomer(c2);
+    // Seed demo transactions
+    DB.addTransaction({ id: DB.uid(), sellerId: seller.id, customerId:'cust_001', type:'purchase', amount:1500, description:'Rice 10kg, Oil 5L', date: new Date().toISOString() });
+    DB.addTransaction({ id: DB.uid(), sellerId: seller.id, customerId:'cust_001', type:'payment', amount:500, description:'Cash payment', date: new Date().toISOString() });
+    DB.addTransaction({ id: DB.uid(), sellerId: seller.id, customerId:'cust_002', type:'purchase', amount:2200, description:'Groceries', date: new Date().toISOString() });
+  }
+})();
+
+/* ======================================================
+   APP
+====================================================== */
+const App = (() => {
+  let session = DB.getSession(); // {role:'seller'|'customer', id, sellerId?}
+
+  /* ---------- ROUTING / VIEWS ---------- */
+  function showView(id) {
+    document.querySelectorAll('.view').forEach(v => {
+      v.classList.remove('active');
+    });
+    const v = document.getElementById(id);
+    if (v) v.classList.add('active');
+
+    const isSidebar = (id === 'view-seller-portal');
+    const isCustomer = (id === 'view-customer-dashboard');
+    const sidebar = document.getElementById('sidebar');
+    const main    = document.getElementById('main');
+
+    if (isSidebar) {
+      sidebar.classList.remove('hidden');
+      main.classList.remove('no-sidebar');
+    } else {
+      sidebar.classList.add('hidden');
+      main.classList.add('no-sidebar');
+    }
+  }
+
+  function goHome() {
+    DB.clearSession();
+    session = null;
+    showView('view-landing');
+  }
+
+  function logout() {
+    DB.clearSession();
+    session = null;
+    showView('view-landing');
+  }
+
+  /* ---------- SELLER MODE TOGGLE ---------- */
+  function sellerMode(mode) {
+    document.getElementById('seller-login-card').style.display    = (mode === 'login')    ? '' : 'none';
+    document.getElementById('seller-register-card').style.display = (mode === 'register') ? '' : 'none';
+  }
+
+  /* ---------- THEME ---------- */
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    updateThemeLabels();
+  }
+  function updateThemeLabels() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const t = isDark ? '🌙 Dark Mode' : '☀️ Light Mode';
+    ['theme-label','s-theme-label'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = t;
+    });
+    const badge = document.getElementById('theme-badge');
+    if (badge) badge.textContent = isDark ? 'ON' : 'ON';
+  }
+
+  /* ---------- PASSWORD TOGGLE ---------- */
+  function togglePw(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'Hide'; }
+    else { inp.type = 'password'; btn.textContent = 'Show'; }
+  }
+
+  /* ---------- MODALS ---------- */
+  function openModal(id) {
+    // Populate customer selects if needed
+    if (id === 'modal-purchase' || id === 'modal-payment') {
+      const selId = id === 'modal-purchase' ? 'pur-cust' : 'pay-cust';
+      const sel = document.getElementById(selId);
+      sel.innerHTML = '';
+      const custs = DB.getCustomers(session.id);
+      if (custs.length === 0) {
+        sel.innerHTML = '<option value="">No customers — add one first</option>';
+      } else {
+        custs.forEach(c => {
+          const o = document.createElement('option');
+          o.value = c.id;
+          o.textContent = `${c.name} (${c.phone})`;
+          sel.appendChild(o);
+        });
+      }
+    }
+    document.getElementById(id).classList.add('open');
+  }
+
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('open');
+  }
+
+  /* ---------- ALERTS ---------- */
+  function showAlert(elId, msg, type='err') {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    setTimeout(() => { el.innerHTML = ''; }, 4000);
+  }
+
+  /* ---------- FORMAT ---------- */
+  function fmt(n) { return '₹' + Number(n || 0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function fmtDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) + ' ' +
+           d.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+  }
+
+  /* ==========================================================
+     SELLER AUTHENTICATION
+  ========================================================== */
+  function sellerLogin(e) {
+    e.preventDefault();
+    const raw  = document.getElementById('sl-email').value.trim();
+    const pass = document.getElementById('sl-pass').value;
+
+    // Find seller by email or phone
+    let seller = DB.getSellerByEmail(raw) || DB.getSellerByPhone(raw);
+
+    // Also allow shorthand 'seller' or 'admin' for any seller
+    if (!seller && (raw.toLowerCase() === 'seller' || raw.toLowerCase() === 'admin')) {
+      seller = DB.getSellers()[0];
+    }
+
+    if (!seller) {
+      showAlert('sl-alert', '❌ No account found with this email/phone. Please register first.');
+      return;
+    }
+    if (seller.password !== pass && !(raw.toLowerCase() === 'seller' || raw.toLowerCase() === 'admin')) {
+      showAlert('sl-alert', '❌ Incorrect password. Please try again.');
+      return;
+    }
+
+    session = { role: 'seller', id: seller.id };
+    DB.setSession(session);
+    enterSellerPortal(seller);
+  }
+
+  function sellerRegister(e) {
+    e.preventDefault();
+    const name  = document.getElementById('sr-name').value.trim();
+    const store = document.getElementById('sr-store').value.trim();
+    const email = document.getElementById('sr-email').value.trim().toLowerCase();
+    const phone = document.getElementById('sr-phone').value.trim();
+    const pass  = document.getElementById('sr-pass').value;
+
+    if (pass.length < 6) { showAlert('sr-alert','❌ Password must be at least 6 characters.'); return; }
+    if (DB.getSellerByEmail(email)) { showAlert('sr-alert','❌ This email is already registered. Please sign in.'); return; }
+    if (DB.getSellerByPhone(phone)) { showAlert('sr-alert','❌ This phone is already registered. Please sign in.'); return; }
+
+    const seller = { id: DB.uid(), name, storeName: store, email, phone, password: pass, createdAt: new Date().toISOString() };
+    DB.addSeller(seller);
+
+    showAlert('sr-alert','✅ Account created! You can now sign in.','ok');
+    setTimeout(() => sellerMode('login'), 1500);
+  }
+
+  function enterSellerPortal(seller) {
+    // Update UI labels
+    document.getElementById('store-chip').textContent = seller.storeName;
+    document.getElementById('s-name').value  = seller.name;
+    document.getElementById('s-email').value = seller.email;
+    document.getElementById('s-phone').value = seller.phone;
+    document.getElementById('s-store').value = seller.storeName;
+
+    showView('view-seller-portal');
+    tab('dashboard');
+    refreshDash();
+  }
+
+  /* ==========================================================
+     CUSTOMER AUTHENTICATION
+  ========================================================== */
+  function customerLogin(e) {
+    e.preventDefault();
+    const name  = document.getElementById('cl-name').value.trim();
+    const phone = document.getElementById('cl-phone').value.trim();
+
+    const cust = DB.findCustomer(name, phone);
+    if (!cust) {
+      showAlert('cl-alert','❌ No customer found with this name and phone. Please ask your shop owner to add your account.');
+      return;
+    }
+
+    session = { role: 'customer', id: cust.id, sellerId: cust.sellerId };
+    DB.setSession(session);
+    enterCustomerPortal(cust);
+  }
+
+  function enterCustomerPortal(cust) {
+    const bal = DB.getBalance(cust.id);
+    const txns = DB.getCustomerTransactions(cust.id).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    document.getElementById('cp-name').textContent    = cust.name;
+    document.getElementById('cp-phone').textContent   = cust.phone;
+    document.getElementById('cp-purchases').textContent = fmt(bal.purchases);
+    document.getElementById('cp-payments').textContent  = fmt(bal.payments);
+    document.getElementById('cp-due').textContent       = fmt(bal.due);
+
+    // PAY NOW button if due > 0
+    const payArea = document.getElementById('cp-pay-area');
+    if (bal.due > 0) {
+      payArea.innerHTML = `
+        <button class="btn btn-primary btn-lg" onclick="App.payOnline(${bal.due})">
+          💳 Pay Due — ${fmt(bal.due)}
+        </button>`;
+    } else {
+      payArea.innerHTML = `<span class="store-chip" style="background:rgba(16,185,129,.15);color:var(--green);border-color:var(--green)">✅ All Dues Cleared</span>`;
+    }
+
+    // Statement table
+    const tbody = document.getElementById('cp-txn-table');
+    if (txns.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="empty-icon">📋</div><h4>No transactions yet</h4></div></td></tr>`;
+    } else {
+      tbody.innerHTML = txns.map(t => `
+        <tr>
+          <td>${fmtDate(t.date)}</td>
+          <td><span class="badge badge-${t.type}">${t.type === 'purchase' ? '🛒 Purchase' : '💵 Payment'}</span></td>
+          <td style="font-weight:700;color:${t.type === 'purchase' ? 'var(--red)' : 'var(--green)'}">${fmt(t.amount)}</td>
+          <td>${t.description || '—'}</td>
+        </tr>
+      `).join('');
+    }
+
+    showView('view-customer-dashboard');
+  }
+
+  /* ==========================================================
+     SELLER PORTAL — TABS
+  ========================================================== */
+  function tab(name) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('active');
+    const navBtn = document.querySelector(`[data-tab="${name}"]`);
+    if (navBtn) navBtn.classList.add('active');
+
+    const titles = { dashboard: 'Dashboard', customers: 'Customers', transactions: 'Transactions', settings: 'Settings' };
+    document.getElementById('page-title').textContent = titles[name] || name;
+
+    if (name === 'dashboard')    refreshDash();
+    if (name === 'customers')    renderCustTable();
+    if (name === 'transactions') renderTxnTable();
+  }
+
+  /* ---------- DASHBOARD REFRESH ---------- */
+  function refreshDash() {
+    if (!session) return;
+    const custs = DB.getCustomers(session.id);
+    let totPur = 0, totPay = 0, totDue = 0;
+
+    const rows = custs.map((c, i) => {
+      const bal = DB.getBalance(c.id);
+      totPur += bal.purchases;
+      totPay += bal.payments;
+      totDue += bal.due;
+      return `<tr>
+        <td>${i+1}</td>
+        <td style="font-weight:700;color:var(--text)">${c.name}</td>
+        <td>${c.phone}</td>
+        <td>${fmt(bal.purchases)}</td>
+        <td style="color:var(--green)">${fmt(bal.payments)}</td>
+        <td style="font-weight:800;color:${bal.due > 0 ? 'var(--red)' : 'var(--green)'}">${fmt(bal.due)}</td>
+        <td>
+          <div class="action-wrap">
+            <button class="btn btn-info btn-sm" onclick="App.openRemind('${c.id}')">🔔 Remind</button>
+            <button class="btn btn-warning btn-sm" onclick="App.openEdit('${c.id}')">✏️ Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="App.deleteCust('${c.id}')">🗑️</button>
+          </div>
+        </td>
+      </tr>`;
+    });
+
+    document.getElementById('m-customers').textContent = custs.length;
+    document.getElementById('m-purchases').textContent = fmt(totPur);
+    document.getElementById('m-payments').textContent  = fmt(totPay);
+    document.getElementById('m-dues').textContent      = fmt(totDue);
+
+    const tbody = document.getElementById('dash-table');
+    tbody.innerHTML = rows.length ? rows.join('') :
+      `<tr><td colspan="7"><div class="empty"><div class="empty-icon">👥</div><h4>No customers yet</h4><p>Click "Add Customer" to get started</p></div></td></tr>`;
+  }
+
+  /* ---------- CUSTOMERS TABLE ---------- */
+  function renderCustTable() {
+    if (!session) return;
+    const custs = DB.getCustomers(session.id);
+    const rows = custs.map((c,i) => {
+      const bal = DB.getBalance(c.id);
+      return `<tr>
+        <td>${i+1}</td>
+        <td style="font-weight:700;color:var(--text)">${c.name}</td>
+        <td>${c.phone}</td>
+        <td>${c.email || '—'}</td>
+        <td>${c.address || '—'}</td>
+        <td style="font-weight:800;color:${bal.due > 0 ? 'var(--red)':'var(--green)'}">${fmt(bal.due)}</td>
+        <td>
+          <div class="action-wrap">
+            <button class="btn btn-info btn-sm" onclick="App.openRemind('${c.id}')">🔔</button>
+            <button class="btn btn-warning btn-sm" onclick="App.openEdit('${c.id}')">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="App.deleteCust('${c.id}')">🗑️</button>
+          </div>
+        </td>
+      </tr>`;
+    });
+    document.getElementById('cust-table').innerHTML = rows.length ? rows.join('') :
+      `<tr><td colspan="7"><div class="empty"><div class="empty-icon">👥</div><h4>No customers yet</h4></div></td></tr>`;
+  }
+
+  /* ---------- TRANSACTIONS TABLE ---------- */
+  function renderTxnTable() {
+    if (!session) return;
+    const txns = DB.getTransactions(session.id).sort((a,b) => new Date(b.date) - new Date(a.date));
+    const custs = DB.getCustomers(session.id);
+
+    const rows = txns.map(t => {
+      const c = custs.find(x => x.id === t.customerId);
+      return `<tr>
+        <td style="color:var(--text-muted);font-size:.85rem">${fmtDate(t.date)}</td>
+        <td style="font-weight:700;color:var(--text)">${c ? c.name : 'Deleted'}</td>
+        <td><span class="badge badge-${t.type}">${t.type === 'purchase' ? '🛒 Purchase' : '💵 Payment'}</span></td>
+        <td style="font-weight:800;color:${t.type === 'purchase' ? 'var(--red)' : 'var(--green)'}">${fmt(t.amount)}</td>
+        <td>${t.description || '—'}</td>
+      </tr>`;
+    });
+    document.getElementById('txn-table').innerHTML = rows.length ? rows.join('') :
+      `<tr><td colspan="5"><div class="empty"><div class="empty-icon">💳</div><h4>No transactions yet</h4></div></td></tr>`;
+  }
+
+  /* ==========================================================
+     CUSTOMER CRUD
+  ========================================================== */
+  function addCustomer(e) {
+    e.preventDefault();
+    if (!session) return;
+    const c = {
+      id: DB.uid(),
+      sellerId: session.id,
+      name:    document.getElementById('ac-name').value.trim(),
+      phone:   document.getElementById('ac-phone').value.trim(),
+      email:   document.getElementById('ac-email').value.trim(),
+      address: document.getElementById('ac-addr').value.trim(),
+      createdAt: new Date().toISOString()
+    };
+    DB.addCustomer(c);
+    closeModal('modal-add-cust');
+    e.target.reset();
+    refreshDash();
+    renderCustTable();
+  }
+
+  function openEdit(custId) {
+    const custs = DB.getAllCustomers();
+    const c = custs.find(x => x.id === custId);
+    if (!c) return;
+    document.getElementById('ec-id').value    = c.id;
+    document.getElementById('ec-name').value  = c.name;
+    document.getElementById('ec-phone').value = c.phone;
+    document.getElementById('ec-email').value = c.email || '';
+    document.getElementById('ec-addr').value  = c.address || '';
+    openModal('modal-edit-cust');
+  }
+
+  function updateCustomer(e) {
+    e.preventDefault();
+    const id = document.getElementById('ec-id').value;
+    DB.updateCustomer(id, {
+      name:    document.getElementById('ec-name').value.trim(),
+      phone:   document.getElementById('ec-phone').value.trim(),
+      email:   document.getElementById('ec-email').value.trim(),
+      address: document.getElementById('ec-addr').value.trim(),
+    });
+    closeModal('modal-edit-cust');
+    refreshDash();
+    renderCustTable();
+  }
+
+  function deleteCust(custId) {
+    const custs = DB.getAllCustomers();
+    const c = custs.find(x => x.id === custId);
+    if (!c) return;
+    if (!confirm(`Delete customer "${c.name}"? This will also delete all their transactions. This cannot be undone.`)) return;
+    DB.deleteCustomer(custId);
+    refreshDash();
+    renderCustTable();
+  }
+
+  /* ==========================================================
+     TRANSACTIONS
+  ========================================================== */
+  function addPurchase(e) {
+    e.preventDefault();
+    if (!session) return;
+    const custId = document.getElementById('pur-cust').value;
+    const amt    = parseFloat(document.getElementById('pur-amt').value);
+    const desc   = document.getElementById('pur-desc').value.trim();
+    if (!custId || isNaN(amt) || amt <= 0) return;
+    DB.addTransaction({ id: DB.uid(), sellerId: session.id, customerId: custId, type:'purchase', amount: amt, description: desc, date: new Date().toISOString() });
+    closeModal('modal-purchase');
+    e.target.reset();
+    refreshDash();
+    renderTxnTable();
+  }
+
+  function addPayment(e) {
+    e.preventDefault();
+    if (!session) return;
+    const custId = document.getElementById('pay-cust').value;
+    const amt    = parseFloat(document.getElementById('pay-amt').value);
+    const desc   = document.getElementById('pay-desc').value.trim();
+    if (!custId || isNaN(amt) || amt <= 0) return;
+    DB.addTransaction({ id: DB.uid(), sellerId: session.id, customerId: custId, type:'payment', amount: amt, description: desc, date: new Date().toISOString() });
+    closeModal('modal-payment');
+    e.target.reset();
+    refreshDash();
+    renderTxnTable();
+  }
+
+  /* ==========================================================
+     REMINDER
+  ========================================================== */
+  function openRemind(custId) {
+    const custs = DB.getAllCustomers();
+    const c = custs.find(x => x.id === custId);
+    if (!c) return;
+    const bal = DB.getBalance(custId);
+    const seller = DB.getSellers().find(s => s.id === session.id);
+    const storeName = seller ? seller.storeName : 'Your Shop';
+
+    const msg = `📢 Payment Reminder\n\nDear ${c.name},\n\nThis is a gentle reminder from *${storeName}*.\n\nYour current outstanding due is:\n💰 *${fmt(bal.due)}*\n\nKindly clear this at your earliest convenience.\n\nThank you for your business! 🙏`;
+
+    document.getElementById('remind-preview').innerHTML = msg.replace(/\n/g,'<br>').replace(/\*(.*?)\*/g,'<strong>$1</strong>');
+
+    const encoded = encodeURIComponent(msg);
+    const waLink  = `https://wa.me/${c.phone.replace(/\D/g,'')}?text=${encoded}`;
+
+    document.getElementById('remind-wa-btn').onclick   = () => window.open(waLink, '_blank');
+    document.getElementById('remind-copy-btn').onclick = () => {
+      navigator.clipboard.writeText(msg).then(() => {
+        document.getElementById('remind-copy-btn').textContent = '✅ Copied!';
+        setTimeout(() => document.getElementById('remind-copy-btn').textContent = '📋 Copy Message', 2000);
+      });
+    };
+
+    openModal('modal-remind');
+  }
+
+  /* ==========================================================
+     ONLINE PAYMENT (Razorpay simulation)
+  ========================================================== */
+  function payOnline(amount) {
+    alert(`💳 Online Payment\n\nAmount: ₹${amount.toFixed(2)}\n\n(Razorpay integration requires a live server & Merchant key. For demo purposes, this is a simulation.)\n\nIn production, connect your Razorpay Key ID here.`);
+  }
+
+  /* ==========================================================
+     SETTINGS
+  ========================================================== */
+  function saveSettings(e) {
+    e.preventDefault();
+    if (!session) return;
+    const storeName = document.getElementById('s-store').value.trim();
+    DB.updateSeller(session.id, { storeName });
+    document.getElementById('store-chip').textContent = storeName;
+    alert('✅ Settings saved successfully!');
+  }
+
+  /* ==========================================================
+     INIT — restore session on page load
+  ========================================================== */
+  function init() {
+    updateThemeLabels();
+    const s = DB.getSession();
+    if (s) {
+      session = s;
+      if (s.role === 'seller') {
+        const seller = DB.getSellers().find(x => x.id === s.id);
+        if (seller) { enterSellerPortal(seller); return; }
+      }
+      if (s.role === 'customer') {
+        const cust = DB.getAllCustomers().find(x => x.id === s.id);
+        if (cust) { enterCustomerPortal(cust); return; }
+      }
+    }
+    showView('view-landing');
+  }
+
+  return {
+    showView, goHome, logout,
+    sellerMode, sellerLogin, sellerRegister,
+    customerLogin,
+    toggleTheme, togglePw,
+    tab, refreshDash, renderCustTable, renderTxnTable,
+    openModal, closeModal,
+    addCustomer, openEdit, updateCustomer, deleteCust,
+    addPurchase, addPayment,
+    openRemind, payOnline,
+    saveSettings,
+    init
+  };
+})();
+
+// Boot
+document.addEventListener('DOMContentLoaded', App.init);
+</script>
+</body>
+</html>
