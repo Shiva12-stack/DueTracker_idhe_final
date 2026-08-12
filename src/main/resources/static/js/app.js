@@ -74,7 +74,7 @@ window.App = {
     const x = this.$(id);
     if (!x) return;
 
-    x.innerHTML = `<div class="alert alert-${type}">${this.escapeHtml(msg)}</div>`;
+    x.innerHTML = `<div class="alert alert-${type}">${this.escape(msg)}</div>`;
     setTimeout(() => x.innerHTML = "", 5000);
   },
 
